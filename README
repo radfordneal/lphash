@@ -1,0 +1,14 @@
+LOCALLY-PROBED HASHING FACILITY
+
+Copyright 2017 Radford M. Neal.  Distributed under the GPL version 2
+or later.  See COPYING for licence details.
+
+The lphash library provides a facility for managing hash tables, such
+as might be used to implement a symbol table in an implementation of a
+language such as R.
+
+See the file lphash-doc for documentation.
+
+The source code repository for this software is at
+
+   https://gitlab.com/radfordneal/lphash
