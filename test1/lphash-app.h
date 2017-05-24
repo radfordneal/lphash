@@ -24,4 +24,7 @@ typedef unsigned lphash_hash_t;
 #define LPHASH_NO_ENTRY ((-2)*(1<<30))
 #define LPHASH_MAX_LOAD 0.6
 
+#define lphash_malloc malloc
+#define lphash_free free
+
 #include "lphash.h"

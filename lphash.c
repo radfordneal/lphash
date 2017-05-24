@@ -24,7 +24,31 @@
 
 lphash_table_t lphash_create (int initial_size)
 {
-  return NULL;
+  int size = 8;
+
+  if (initial_size > 8)
+  { while ((unsigned)size << 1 <= (unsigned)initial_size) size <<= 1;
+  }
+
+  lphash_table_t table = lphash_malloc (sizeof *table);
+  if (table == NULL)
+  { return NULL;
+  }
+
+  table->size = size;
+  table->occupied = 0;
+
+  table->buckets = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
+  if (table->buckets == NULL)
+  { lphash_free(table);
+    return NULL;
+  }
+
+  for (int i = 0; i < size; i++)
+  { table->buckets[i].entry = LPHASH_NO_ENTRY;
+  }
+
+  return table;
 }
 
 int lphash_insert (lphash_table_t table, lphash_hash_t hash,
@@ -39,4 +63,6 @@ lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
 
 void lphash_destroy (lphash_table_t table)
 {
+  lphash_free (table->buckets);
+  lphash_free (table);
 }
