@@ -85,7 +85,7 @@ they are not macros):
     Allocates 'size' bytes of memory (with undefined contents) to be
     used as part of a hash table.  Returns NULL if allocation fails.
 
-  int lphash_free (void *ptr)
+  void lphash_free (void *ptr)
 
     Frees memory allocated by lphash_malloc.
 
@@ -96,6 +96,10 @@ they are not macros):
     has reached its maximum allowed load (see below).  This function
     should never return - it should either exit the program or execute
     a long jump that terminates the caller of lphash_out_of_space.
+
+    Note that lphash_out_of_space is not called if a new table cannot
+    be created because of lack of space (which is instead signalled by
+    the return of NULL from lphash_create).
 
 An application might simply define lphash_malloc and lphash_free to be
 the standard malloc and free functions from the C library, or might
