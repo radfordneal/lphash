@@ -1,4 +1,4 @@
-/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - FUNCTION DEFINITIONS
+/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - HEADER FILE FOR TEST #1.
 
    Copyright (c) 2017 Radford M. Neal.
 
@@ -17,26 +17,11 @@
    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. */
 
 
-/* See lphash-doc for general information on the lphash library. */
+typedef int lphash_entry_t;
+typedef char *lphash_key_t;
+typedef unsigned lphash_hash_t;
 
+#define LPHASH_NO_ENTRY ((-2)*(1<<30))
+#define LPHASH_MAX_LOAD 0.6
 
-#include "lphash-app.h"
-
-lphash_table_t lphash_create (int initial_size)
-{
-  return NULL;
-}
-
-int lphash_insert (lphash_table_t table, lphash_hash_t hash,
-                   lphash_entry_t entry, lphash_key_t key)
-{
-}
-
-lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
-                              lphash_key_t key)
-{
-}
-
-void lphash_destroy (lphash_table_t table)
-{
-}
+#include "lphash.h"

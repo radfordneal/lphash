@@ -1,4 +1,4 @@
-/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - FUNCTION DEFINITIONS
+/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - PROGRAM FOR TEST #1.
 
    Copyright (c) 2017 Radford M. Neal.
 
@@ -16,27 +16,20 @@
    with this program; if not, write to the Free Software Foundation, Inc.,
    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA. */
 
-
-/* See lphash-doc for general information on the lphash library. */
-
-
+#include <stdio.h>
 #include "lphash-app.h"
 
-lphash_table_t lphash_create (int initial_size)
+int main (int argc, char **argv)
 {
-  return NULL;
-}
+  lphash_table_t tbl;
 
-int lphash_insert (lphash_table_t table, lphash_hash_t hash,
-                   lphash_entry_t entry, lphash_key_t key)
-{
-}
+  tbl = lphash_create (64);
+  if (tbl == NULL)
+  { fprintf (stderr, "Can't create table\n");
+    exit(1);
+  }
 
-lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
-                              lphash_key_t key)
-{
-}
+  lphash_destroy(tbl);
 
-void lphash_destroy (lphash_table_t table)
-{
+  return 0;
 }

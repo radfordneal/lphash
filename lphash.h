@@ -20,6 +20,23 @@
 /* See lphash-doc for general information on the lphash library. */
 
 
+#include <stdlib.h>
+
+
+/* INTERNAL STRUCTURE OF A HASH TABLE. */
+
+typedef struct 
+{ lphash_hash_t hash; 
+  lphash_entry_t entry; 
+} lphash_bucket_t;
+
+typedef struct
+{ int size;                  /* Number of buckets in table */
+  int occupied;              /* Number of occupied buckets */
+  lphash_bucket_t *bucket;   /* Array of 'size' buckets */
+} *lphash_table_t;
+
+
 /* FUNCTIONS PROVIDED BY LPHASH TO THE APPLICATION. */
 
 lphash_table_t lphash_create (int initial_size);
