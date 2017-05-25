@@ -89,6 +89,13 @@ lphash_table_t lphash_create (int initial_size)
 
   table->occupied = 0;
 
+# ifdef LPHASH_STATS
+    table->searches = 0;
+    table->not_found = 0;
+    table->probes = 0;
+    table->matches = 0;
+# endif
+
   return table;
 }
 
@@ -110,6 +117,10 @@ static inline int search (lphash_table_t table, lphash_hash_t hash,
                           lphash_key_t key)
 {
   int i, x;
+
+# ifdef LPHASH_STATS
+    table->searches += 1;
+# endif
   
   i = hash & (table->size-1);
   x = 0;
@@ -124,9 +135,27 @@ static inline int search (lphash_table_t table, lphash_hash_t hash,
 
     lphash_bucket_t *b = &table->buckets[ix];
 
-    if (b->entry == LPHASH_NO_ENTRY
-     || b->hash == hash && lphash_match (b->entry, key))
-    { return ix;
+#   ifdef LPHASH_STATS
+      table->probes += 1;
+#   endif
+
+    if (b->entry == LPHASH_NO_ENTRY)
+    { 
+#     ifdef LPHASH_STATS
+        table->not_found += 1;
+#     endif
+      return ix;
+    }
+
+    if (b->hash == hash)
+    {
+#     ifdef LPHASH_STATS
+        table->matches += 1;
+#     endif
+
+      if (lphash_match (b->entry, key))
+      { return ix;
+      }
     }
 
     x += 1;
@@ -138,26 +167,51 @@ static inline int search (lphash_table_t table, lphash_hash_t hash,
 }
 
 
-/* EXPAND A TABLE TO DOUBLE ITS SIZE. */
+/* TRY TO EXPAND A TABLE TO DOUBLE ITS SIZE. */
 
-static int expand_table (lphash_table_t table)
+static void expand_table (lphash_table_t table)
 { 
   if (table->size > INT_MAX/2)
-  { return 0;
+  { return;
   }
 
   int old_size = table->size;
   lphash_bucket_t *old_buckets = table->buckets;
 
   if (!allocate_buckets(table,old_size*2))
-  { return 0;
+  { return;
   }
 
-  for (int i = 0; i < old_size; i++)
-  {
-  }
+  int i, j, x, ix;
 
-  return 1;
+  for (j = 0; j < old_size; j++)
+  { 
+    if (old_buckets[j].entry == LPHASH_NO_ENTRY)
+    { continue;
+    }
+
+    lphash_hash_t hash = old_buckets[j].hash;
+
+    i = hash & (table->size-1);
+    x = 0;
+
+    for (;;)
+    { 
+#     ifdef LPHASH_LINEAR
+        ix = (i+x) & (table->size-1);
+#     else
+        ix = i^x;
+#     endif
+
+      if (table->buckets[ix].entry == LPHASH_NO_ENTRY)
+      { break;
+      }
+
+      x += 1;
+    }
+
+    table->buckets[ix] = old_buckets[j];
+  }
 }
 
 
@@ -174,10 +228,8 @@ lphash_entry_t lphash_insert (lphash_table_t table, lphash_hash_t hash,
   }
 
   if (table->occupied==table->threshold || table->occupied==table->threshold2)
-  { if (table->size <= INT_MAX/2)
-    {
-
-    }
+  { expand_table (table);
+    ix = search (table, hash, key);
   }
 
   if (table->occupied >= table->threshold2)

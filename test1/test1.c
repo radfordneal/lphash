@@ -112,6 +112,10 @@ int main (int argc, char **argv)
             lphash_insert(tbl,hash(tests[t]),tests[t]));
   }
 
+  printf("\nStatistics: ");
+  printf("%d occupied, %d searches (%d not found), %d probes, %d matches\n",
+    tbl->occupied, tbl->searches, tbl->not_found, tbl->probes, tbl->matches);
+
   lphash_destroy(tbl);
 
   return 0;

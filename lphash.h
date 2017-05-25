@@ -37,6 +37,14 @@ typedef struct
   int threshold;             /* Threshold for increasing table size */
   int threshold2;            /* Threshold for declaring overflow */
   lphash_bucket_t *buckets;  /* Pointer to an array of 'size' buckets */
+
+# ifdef LPHASH_STATS
+  int searches;              /* Number of searches done */
+  int not_found;             /* Number of searches where entry not found */
+  int probes;                /* Number of buckets probed */
+  int matches;               /* Number of calls of lphash_match */
+# endif
+
 } *lphash_table_t;
 
 

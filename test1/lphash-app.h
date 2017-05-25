@@ -22,7 +22,10 @@ typedef char *lphash_key_t;
 typedef unsigned lphash_hash_t;
 
 #define LPHASH_NO_ENTRY (-1)
-#define LPHASH_MAX_LOAD 0.6
+
+#ifndef LPHASH_MAX_LOAD
+#define LPHASH_MAX_LOAD 0.7
+#endif
 
 #define lphash_malloc malloc
 #define lphash_free free
