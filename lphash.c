@@ -22,8 +22,14 @@
 
 #include "lphash-app.h"
 #include <limits.h>
+#include <math.h>
 
-static int alloc (lphash_table_t table, int size)
+
+/* ALLOCATE BUCKETS FOR A TABLE.  Returns 0 if space ca't be allocated.
+   Otherwise returns 1 after setting the fields in 'table' for the bucket
+   array (initialized to LPHASH_NO_ENTRY) and the size and thresholds. */
+
+static int allocate_buckets (lphash_table_t table, int size)
 {
   void *m = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
 
@@ -44,14 +50,13 @@ static int alloc (lphash_table_t table, int size)
   }
 
   table->threshold2 = (int) (size * sqrt(LPHASH_MAX_LOAD));
-  if (table->thresdhold2 < 2)
-  { table->thresdhold2 = 2;
+  if (table->threshold2 < 2)
+  { table->threshold2 = 2;
   }
   if (table->threshold2 >= size)
   { table->threshold2 = size-1;
   }
 
-  table->occupied = 0;
   for (int i = 0; i < size; i++)
   { table->buckets[i].entry = LPHASH_NO_ENTRY;
   }
@@ -59,6 +64,8 @@ static int alloc (lphash_table_t table, int size)
   return 1;
 }
 
+
+/* CREATE A HASH TABLE. */
 
 lphash_table_t lphash_create (int initial_size)
 {
@@ -75,19 +82,29 @@ lphash_table_t lphash_create (int initial_size)
   { return NULL;
   }
 
-  if (!alloc (table, size))
+  if (!allocate_buckets(table,size))
   { lphash_free(table);
     return NULL;
   }
 
+  table->occupied = 0;
+
   return table;
 }
+
+
+/* DESTROY A HASH TABLE. */
 
 void lphash_destroy (lphash_table_t table)
 {
   lphash_free (table->buckets);
   lphash_free (table);
 }
+
+
+/* SEARCH FOR A TABLE ENTRY WITH GIVEN HASH AND KEY.  Returns the index
+   of the bucket with the entry found, or if not found, the index of the 
+   bucket where a new entry should be stored. */
 
 static inline int search (lphash_table_t table, lphash_hash_t hash, 
                           lphash_key_t key)
@@ -105,7 +122,7 @@ static inline int search (lphash_table_t table, lphash_hash_t hash,
       int ix = i^x;
 #   endif
 
-    lphash_bucket_t *b = table->buckets[ix];
+    lphash_bucket_t *b = &table->buckets[ix];
 
     if (b->entry == LPHASH_NO_ENTRY
      || b->hash == hash && lphash_match (b->entry, key))
@@ -113,14 +130,17 @@ static inline int search (lphash_table_t table, lphash_hash_t hash,
     }
 
     x += 1;
+
+    if (x == table->size)
+    { abort(); /* shouldn't happen - table should always have an empty bucket */
+    }
   }
-
-  /* We should never get here - the table should always have an empty bucket. */
-
-  abort();  
 }
 
-static int realloc (lphash_table_t table)
+
+/* EXPAND A TABLE TO DOUBLE ITS SIZE. */
+
+static int expand_table (lphash_table_t table)
 { 
   if (table->size > INT_MAX/2)
   { return 0;
@@ -129,7 +149,7 @@ static int realloc (lphash_table_t table)
   int old_size = table->size;
   lphash_bucket_t *old_buckets = table->buckets;
 
-  if (!alloc (table, old_size*2))
+  if (!allocate_buckets(table,old_size*2))
   { return 0;
   }
 
@@ -140,13 +160,17 @@ static int realloc (lphash_table_t table)
   return 1;
 }
 
-int lphash_insert (lphash_table_t table, lphash_hash_t hash,
-                   lphash_entry_t entry, lphash_key_t key)
+
+/* INSERT AN ENTRY IN A HASH TABLE. */
+
+lphash_entry_t lphash_insert (lphash_table_t table, lphash_hash_t hash,
+                              lphash_key_t key)
 {
   int ix = search (table, hash, key);
+  lphash_entry_t entry = table->buckets[ix].entry;
 
-  if (table->buckets[ix].entry != LPHASH_NO_ENTRY)
-  { return 0;
+  if (entry != LPHASH_NO_ENTRY)
+  { return entry;
   }
 
   if (table->occupied==table->threshold || table->occupied==table->threshold2)
@@ -157,18 +181,23 @@ int lphash_insert (lphash_table_t table, lphash_hash_t hash,
   }
 
   if (table->occupied >= table->threshold2)
-  { return -1;
+  { return LPHASH_NO_ENTRY;
   }
+
+  entry = lphash_make_entry(key);
 
   table->buckets[ix].entry = entry;
   table->buckets[ix].hash = hash;
   table->occupied += 1;
 
-  return 1;
+  return entry;
 }
+
+
+/* SEARCH FOR AN ENTRY IN A HASH TABLE. */
 
 lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
                               lphash_key_t key)
 {
-  table->buckets [search (table, hash, key)] . entry;
+  return table->buckets [search (table, hash, key)] . entry;
 }

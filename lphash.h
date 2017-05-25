@@ -23,19 +23,20 @@
 #include <stdlib.h>
 
 
-/* INTERNAL STRUCTURE OF A HASH TABLE. */
+/* INTERNAL STRUCTURE OF A HASH TABLE.  Should not be directly referenced by
+   the application. */
 
 typedef struct 
-{ lphash_hash_t hash; 
-  lphash_entry_t entry; 
+{ lphash_entry_t entry;      /* Entry in this bucket, or LPHASH_NO_ENTRY */
+  lphash_hash_t hash;        /* Full hash value for this entry (if present) */
 } lphash_bucket_t;
 
 typedef struct
 { int size;                  /* Number of buckets in table */
   int occupied;              /* Number of occupied buckets */
   int threshold;             /* Threshold for increasing table size */
-  int threshold2;            /* Threshold for declaring out of space */
-  lphash_bucket_t *buckets;  /* Array of 'size' buckets */
+  int threshold2;            /* Threshold for declaring overflow */
+  lphash_bucket_t *buckets;  /* Pointer to an array of 'size' buckets */
 } *lphash_table_t;
 
 
@@ -43,10 +44,10 @@ typedef struct
 
 lphash_table_t lphash_create (int initial_size);
 
-int lphash_insert (lphash_table_t table, lphash_hash_t hash,
-                   lphash_entry_t entry, lphash_key_t key);
-
 lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
+                              lphash_key_t key);
+
+lphash_entry_t lphash_insert (lphash_table_t table, lphash_hash_t hash,
                               lphash_key_t key);
 
 void lphash_destroy (lphash_table_t table);
@@ -59,6 +60,10 @@ void lphash_destroy (lphash_table_t table);
 int lphash_match (lphash_entry_t entry, lphash_key_t key);
 #endif
 
+#ifndef lphash_make_entry
+lphash_entry_t lphash_make_entry (lphash_key_t key);
+#endif
+
 #ifndef lphash_malloc
 void *lphash_malloc (size_t size);
 #endif
@@ -66,8 +71,3 @@ void *lphash_malloc (size_t size);
 #ifndef lphash_free
 void lphash_free (void *ptr);
 #endif
-
-#ifndef lphash_out_of_space
-void lphash_out_of_space (lphash_table_t table);
-#endif
-

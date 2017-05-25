@@ -27,10 +27,11 @@ required for some applications, such as the symbol table in an
 implementation of R.  The size of the hash table is automatically
 increased as needed.
 
-The application using lphash defines the type of a hash value, which
-is computed by the application, as well as the type of an entry in the
-hash table, and the type of a key.  It also supplies a function/macro
-to test whether an entry matches a search key.
+The application using lphash defines the type of an entry in the hash
+table, and the type of a key.  It also defines the type of a hash
+value, which is computed by the application from a key.  It also
+supplies functions or macros to create an entry with a given key and
+to test whether an entry matches a key.
 
 
 USING LPHASH IN AN APPLICATION
@@ -78,7 +79,13 @@ they are not macros):
 
   int lphash_match (lphash_entry_t entry, lphash_key_t key)
 
-    Returns 1 if the given key matches the given entry, and 0 if not.
+    Returns 1 if the 'key' matches 'entry', and 0 if not.
+
+  lphash_entry_t lphash_make_entry (lphash_key_t key)
+
+    Creates an entry for the given key.  It should be the case that
+    lphash_match would return 1 if called with the new entry and this
+    key, but this is not checked.
 
   void *lphash_malloc (size_t size)
 
@@ -104,7 +111,7 @@ macros) below, which (if functions) have prototypes as shown:
 
     Returns a pointer to a new hash table, which is initially empty,
     and has the number of buckets specified by the argument, which
-    should be a power of two and least 8.  (The size is silently
+    should be a power of two and at least 8.  (The size is silently
     increased to 8 if it is less, and is otherwise silently decreased
     to the next lower power of two if it is not a power of two.)
 
@@ -115,26 +122,21 @@ macros) below, which (if functions) have prototypes as shown:
 
     NULL is returned if a new table cannot be allocated.
 
-  int lphash_insert (lphash_table_t table, lphash_hash_t hash,
-                     lphash_entry_t entry, lphash_key_t key)
-
-    Creates a new entry in 'table', with 'hash' and 'entry' as given.
-    A search is first done for an existing entry with that hash that
-    matches the given 'key' (as determined by lphash_match).  If a
-    match is found, no entry is created, and lphash_insert returns 0.
-    Otherwise, a new entry is created and lphash_insert returns 1,
-    unless creating a new entry would overlow the table, in which case
-    lphash_insert returns -1.
-
-    It should be the case that lphash_match would say that 'key'
-    matches 'entry', though this is not checked.
-
   lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
                                 lphash_key_t key)
 
     Looks for an entry in 'table' that has the given 'hash' and
     matches the given 'key'.  Returns the entry found, or returns
     LPHASH_NO_ENTRY if no matching entry is present in 'table'.
+
+  lphash_entry_t lphash_insert (lphash_table_t table, lphash_hash_t hash, 
+                                lphash_key_t key)
+
+    Searches for an entry in 'table' that has the given 'hash' and
+    matches the given 'key'.  If one is found, it is returned.
+    Otherwise, a new entry created by calling lphash_make_entry is
+    added to 'table', except that if adding a new entry would overflow
+    the table (see below), LPHASH_NO_ENTRY is returned instead.
 
   void lphash_destroy (lphash_table_t table)
 
@@ -146,7 +148,8 @@ increase the load ratio above LPHASH_MAX_LOAD, except that if memory
 for the larger table cannot be allocated (lphash_malloc returns NULL),
 the existing table will be used, until the load ratio exceeds
 sqrt(LPHASH_MAX_LOAD), at which point an attempt to allocate a bigger
-table will again be made, and if this fails, lphash_insert returns -1.
+table will again be made, and if this fails, the table is considered
+to have overflowed, and no new entries can be added.
 
 
 LPHASH HASHING AND PROBING STRATEGY
