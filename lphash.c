@@ -23,10 +23,17 @@
 #include "lphash-app.h"
 #include <limits.h>
 
-static void alloc (lphash_table_t table, int size)
+static int alloc (lphash_table_t table, int size)
 {
+  void *m = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
+
+  if (m == NULL) 
+  { return 0;
+  }
+
+  table->buckets = m;
+
   table->size = size;
-  table->occupied = 0;
 
   table->threshold = (int) (size * LPHASH_MAX_LOAD);
   if (table->threshold < 2)
@@ -44,7 +51,12 @@ static void alloc (lphash_table_t table, int size)
   { table->threshold2 = size-1;
   }
 
-  table->buckets = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
+  table->occupied = 0;
+  for (int i = 0; i < size; i++)
+  { table->buckets[i].entry = LPHASH_NO_ENTRY;
+  }
+ 
+  return 1;
 }
 
 
@@ -53,7 +65,9 @@ lphash_table_t lphash_create (int initial_size)
   int size = 8;
 
   if (initial_size > 8)
-  { while ((unsigned)size << 1 <= (unsigned)initial_size) size <<= 1;
+  { while ((unsigned)size << 1 <= (unsigned)initial_size) 
+    { size <<= 1;
+    }
   }
 
   lphash_table_t table = lphash_malloc (sizeof *table);
@@ -61,15 +75,9 @@ lphash_table_t lphash_create (int initial_size)
   { return NULL;
   }
 
-  alloc (table, size);
-
-  if (table->buckets == NULL)
+  if (!alloc (table, size))
   { lphash_free(table);
     return NULL;
-  }
-
-  for (int i = 0; i < size; i++)
-  { table->buckets[i].entry = LPHASH_NO_ENTRY;
   }
 
   return table;
@@ -84,27 +92,64 @@ void lphash_destroy (lphash_table_t table)
 static inline int search (lphash_table_t table, lphash_hash_t hash, 
                           lphash_key_t key)
 {
+  int i, x;
+  
+  i = hash & (table->size-1);
+  x = 0;
+
+  for (;;)
+  { 
+#   ifdef LPHASH_LINEAR
+      int ix = (i+x) & (table->size-1);
+#   else
+      int ix = i^x;
+#   endif
+
+    lphash_bucket_t *b = table->buckets[ix];
+
+    if (b->entry == LPHASH_NO_ENTRY
+     || b->hash == hash && lphash_match (b->entry, key))
+    { return ix;
+    }
+
+    x += 1;
+  }
+
+  /* We should never get here - the table should always have an empty bucket. */
+
+  abort();  
 }
 
 static int realloc (lphash_table_t table)
 { 
-  if (table->size <= INT_MAX/2)
-  {
-    int old_size = table->size;
-    alloc (table, 
+  if (table->size > INT_MAX/2)
+  { return 0;
   }
+
+  int old_size = table->size;
+  lphash_bucket_t *old_buckets = table->buckets;
+
+  if (!alloc (table, old_size*2))
+  { return 0;
+  }
+
+  for (int i = 0; i < old_size; i++)
+  {
+  }
+
+  return 1;
 }
 
 int lphash_insert (lphash_table_t table, lphash_hash_t hash,
                    lphash_entry_t entry, lphash_key_t key)
 {
-  int i = search (table, hash, key);
+  int ix = search (table, hash, key);
 
-  if (table->buckets[i].entry != LPHASH_NO_ENTRY)
+  if (table->buckets[ix].entry != LPHASH_NO_ENTRY)
   { return 0;
   }
 
-  if (table->occupied >= table->threshold)
+  if (table->occupied==table->threshold || table->occupied==table->threshold2)
   { if (table->size <= INT_MAX/2)
     {
 
@@ -115,8 +160,8 @@ int lphash_insert (lphash_table_t table, lphash_hash_t hash,
   { return -1;
   }
 
-  table->buckets[i].entry = entry;
-  table->buckets[i].hash = hash;
+  table->buckets[ix].entry = entry;
+  table->buckets[ix].hash = hash;
   table->occupied += 1;
 
   return 1;

@@ -143,10 +143,10 @@ macros) below, which (if functions) have prototypes as shown:
 
 The size of a hash table will be doubled when an insertion would
 increase the load ratio above LPHASH_MAX_LOAD, except that if memory
-for the larger table cannot be found, the existing table will be used,
-until the load ratio exceeds sqrt(LPHASH_MAX_LOAD), at which point an
-attempt to allocate a bigger table will again be made - if this fails,
-lphash_insert will return -1.
+for the larger table cannot be allocated (lphash_malloc returns NULL),
+the existing table will be used, until the load ratio exceeds
+sqrt(LPHASH_MAX_LOAD), at which point an attempt to allocate a bigger
+table will again be made, and if this fails, lphash_insert returns -1.
 
 
 LPHASH HASHING AND PROBING STRATEGY
@@ -162,15 +162,15 @@ initial index of a bucket in the table by simply taking the
 appropriate number of low order bits of the hash value.
 
 If the initial bucket looked at by lphash_lookup or lphash_insert
-based on the hash value is occupied by an entry that does not match
-the key, indexes of further buckets to be probed in succession are
-found by exclusive or'ing the low-order bits of the hash value with
-the binary representations of the integers 1, 2, 3, etc.  If the
-number of bytes in a bucket is a power of two, this probing order
-guarantees that the probes will be confined to a single cache line
-until all buckets in that cache line have been probed, regardless of
-how many bytes are in a cache line (assuming that this number is a
-power of two).
+based on the hash value is occupied by an entry that does not have the
+same hash value or does not match the key, indexes of further buckets
+to be probed in succession are found by exclusive or'ing the low-order
+bits of the hash value with the binary representations of the integers
+1, 2, 3, etc.  If the number of bytes in a bucket is a power of two,
+this probing order guarantees that the probes will be confined to a
+single cache line until all buckets in that cache line have been
+probed, regardless of how many bytes are in a cache line (assuming
+that this number is a power of two).
 
 For experimental purposes, defining the symbol LPHASH_LINEAR (as
 anything) in lphash-app.h will switch lphash to using the strategy of
