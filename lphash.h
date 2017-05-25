@@ -33,6 +33,8 @@ typedef struct
 typedef struct
 { int size;                  /* Number of buckets in table */
   int occupied;              /* Number of occupied buckets */
+  int threshold;             /* Threshold for increasing table size */
+  int threshold2;            /* Threshold for declaring out of space */
   lphash_bucket_t *buckets;  /* Array of 'size' buckets */
 } *lphash_table_t;
 

@@ -28,9 +28,9 @@ implementation of R.  The size of the hash table is automatically
 increased as needed.
 
 The application using lphash defines the type of a hash value, which
-it must compute itself, as well as the type of an entry in the hash
-table, and the type of a key.  It also supplies a function/macro to
-test whether an entry matches a search key.
+is computed by the application, as well as the type of an entry in the
+hash table, and the type of a key.  It also supplies a function/macro
+to test whether an entry matches a search key.
 
 
 USING LPHASH IN AN APPLICATION
@@ -89,18 +89,6 @@ they are not macros):
 
     Frees memory allocated by lphash_malloc.
 
-  void lphash_out_of_space (lphash_table_t table)
-
-    Should in some fashion report that allocation of memory to
-    increase the size of 'table' was not possible, and that the table
-    has reached its maximum allowed load (see below).  This function
-    should never return - it should either exit the program or execute
-    a long jump that terminates the caller of lphash_out_of_space.
-
-    Note that lphash_out_of_space is not called if a new table cannot
-    be created because of lack of space (which is instead signalled by
-    the return of NULL from lphash_create).
-
 An application might simply define lphash_malloc and lphash_free to be
 the standard malloc and free functions from the C library, or might
 define an lphash_malloc that tries to recover memory from elsewhere if
@@ -134,7 +122,12 @@ macros) below, which (if functions) have prototypes as shown:
     A search is first done for an existing entry with that hash that
     matches the given 'key' (as determined by lphash_match).  If a
     match is found, no entry is created, and lphash_insert returns 0.
-    If a new entry is created, lphash_insert returns 1. 
+    Otherwise, a new entry is created and lphash_insert returns 1,
+    unless creating a new entry would overlow the table, in which case
+    lphash_insert returns -1.
+
+    It should be the case that lphash_match would say that 'key'
+    matches 'entry', though this is not checked.
 
   lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
                                 lphash_key_t key)
@@ -151,8 +144,9 @@ macros) below, which (if functions) have prototypes as shown:
 The size of a hash table will be doubled when an insertion would
 increase the load ratio above LPHASH_MAX_LOAD, except that if memory
 for the larger table cannot be found, the existing table will be used,
-until the load ratio exceeds sqrt(LPHASH_MAX_LOAD), at which point
-lphash_out_of_space will be called.
+until the load ratio exceeds sqrt(LPHASH_MAX_LOAD), at which point an
+attempt to allocate a bigger table will again be made - if this fails,
+lphash_insert will return -1.
 
 
 LPHASH HASHING AND PROBING STRATEGY

@@ -21,6 +21,32 @@
 
 
 #include "lphash-app.h"
+#include <limits.h>
+
+static void alloc (lphash_table_t table, int size)
+{
+  table->size = size;
+  table->occupied = 0;
+
+  table->threshold = (int) (size * LPHASH_MAX_LOAD);
+  if (table->threshold < 2)
+  { table->threshold = 2;
+  }
+  if (table->threshold >= size)
+  { table->threshold = size-1;
+  }
+
+  table->threshold2 = (int) (size * sqrt(LPHASH_MAX_LOAD));
+  if (table->thresdhold2 < 2)
+  { table->thresdhold2 = 2;
+  }
+  if (table->threshold2 >= size)
+  { table->threshold2 = size-1;
+  }
+
+  table->buckets = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
+}
+
 
 lphash_table_t lphash_create (int initial_size)
 {
@@ -35,10 +61,8 @@ lphash_table_t lphash_create (int initial_size)
   { return NULL;
   }
 
-  table->size = size;
-  table->occupied = 0;
+  alloc (table, size);
 
-  table->buckets = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
   if (table->buckets == NULL)
   { lphash_free(table);
     return NULL;
@@ -51,18 +75,55 @@ lphash_table_t lphash_create (int initial_size)
   return table;
 }
 
+void lphash_destroy (lphash_table_t table)
+{
+  lphash_free (table->buckets);
+  lphash_free (table);
+}
+
+static inline int search (lphash_table_t table, lphash_hash_t hash, 
+                          lphash_key_t key)
+{
+}
+
+static int realloc (lphash_table_t table)
+{ 
+  if (table->size <= INT_MAX/2)
+  {
+    int old_size = table->size;
+    alloc (table, 
+  }
+}
+
 int lphash_insert (lphash_table_t table, lphash_hash_t hash,
                    lphash_entry_t entry, lphash_key_t key)
 {
+  int i = search (table, hash, key);
+
+  if (table->buckets[i].entry != LPHASH_NO_ENTRY)
+  { return 0;
+  }
+
+  if (table->occupied >= table->threshold)
+  { if (table->size <= INT_MAX/2)
+    {
+
+    }
+  }
+
+  if (table->occupied >= table->threshold2)
+  { return -1;
+  }
+
+  table->buckets[i].entry = entry;
+  table->buckets[i].hash = hash;
+  table->occupied += 1;
+
+  return 1;
 }
 
 lphash_entry_t lphash_lookup (lphash_table_t table, lphash_hash_t hash,
                               lphash_key_t key)
 {
-}
-
-void lphash_destroy (lphash_table_t table)
-{
-  lphash_free (table->buckets);
-  lphash_free (table);
+  table->buckets [search (table, hash, key)] . entry;
 }

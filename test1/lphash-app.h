@@ -21,7 +21,7 @@ typedef int lphash_entry_t;
 typedef char *lphash_key_t;
 typedef unsigned lphash_hash_t;
 
-#define LPHASH_NO_ENTRY ((-2)*(1<<30))
+#define LPHASH_NO_ENTRY (-1)
 #define LPHASH_MAX_LOAD 0.6
 
 #define lphash_malloc malloc
