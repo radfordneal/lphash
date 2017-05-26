@@ -113,8 +113,10 @@ int main (int argc, char **argv)
   }
 
   printf("\nStatistics: ");
-  printf("%d occupied, %d searches (%d not found), %d probes, %d matches\n",
-    tbl->occupied, tbl->searches, tbl->not_found, tbl->probes, tbl->matches);
+  printf("load %d/%d, %d searches (%d not found), %d probes, %d matches\n",
+          tbl->occupied, tbl->size, 
+          tbl->searches, tbl->not_found, 
+          tbl->probes, tbl->matches);
 
   lphash_destroy(tbl);
 
