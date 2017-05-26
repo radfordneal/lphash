@@ -21,21 +21,37 @@
 
 
 #include "lphash-app.h"
+#include <stdint.h>
 #include <limits.h>
 #include <math.h>
 
 
-/* ALLOCATE BUCKETS FOR A TABLE.  Returns 0 if space ca't be allocated.
+/* DEFAULT VALUES FOR OPTIONS. */
+
+#ifndef LPHASH_MAX_LOAD
+#define LPHASH_MAX_LOAD 0.75
+#endif
+
+#ifndef LPHASH_ALIGN
+#define LPHASH_ALIGN 64
+#endif
+
+
+/* ALLOCATE BUCKETS FOR A TABLE.  Returns 0 if space can't be allocated.
    Otherwise returns 1 after setting the fields in 'table' for the bucket
    array (initialized to LPHASH_NO_ENTRY) and the size and thresholds. */
 
 static int allocate_buckets (lphash_table_t table, int size)
 {
-  void *m = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t));
+  void *m;
+
+  m = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t) + LPHASH_ALIGN-1);
 
   if (m == NULL) 
   { return 0;
   }
+
+  m = (void *) ((uintptr_t)(m + LPHASH_ALIGN-1) & ~(LPHASH_ALIGN-1));
 
   table->buckets = m;
 

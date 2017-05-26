@@ -55,17 +55,12 @@ The following types must be defined in lphash-app.h:
 
   lphash_hash_t   An unsigned integer type to be used for hash values.
 
-The following constants must be defined in lphash-app.h:
+The following constant must be defined in lphash-app.h:
 
   LPHASH_NO_ENTRY A value of type lphash_entry_t that will not compare
                   equal to any actual entry, and which can therefore
                   be used to mark an empty hash bucket, or signal that
                   no entry was found.
-
-  LPHASH_MAX_LOAD A real value greater than zero and less than one
-                  giving the maximum ratio of occupied to total hash
-                  buckets.  When this maximum is exceeded, a larger
-                  table is allocated, if possible (see below).
 
 The lphash.h file will define the following type:
 
@@ -100,6 +95,28 @@ An application might simply define lphash_malloc and lphash_free to be
 the standard malloc and free functions from the C library, or might
 define an lphash_malloc that tries to recover memory from elsewhere if
 allocation initially fails.
+
+The application may optionally define the following in lphash-app.h:
+
+  LPHASH_MAX_LOAD  A real value greater than zero and less than one
+                   giving the maximum ratio of occupied to total hash
+                   buckets.  When this maximum is exceeded, a larger
+                   table is allocated, if possible (see below).  If
+                   not defined, it defaults to 0.75.
+
+  LPHASH_ALIGN     The address boundary to which the array of hash
+                   buckets is aligned.  Must be a power of two.  If
+                   not defined, it defaults to 64, which is a common
+                   size for a cache line.
+
+  LPHASH_LINEAR    If defined (as anything), indexes of successive
+                   probe locations will be found by adding, rather
+                   than xor'ing (see below for details).
+
+  LPHASH_STATS     If defined (as anything), some statistics will
+                   be collected (at a small performance cost). The
+                   details are subject to change, and may be found by
+                   looking at the source code in lphash.c.
 
 
 FUNCTIONS PROVIDED BY LPHASH TO THE APPLICATION
@@ -157,26 +174,28 @@ LPHASH HASHING AND PROBING STRATEGY
 The hash buckets used by lphash contain a C structure value consisting
 of an lphash_hash_t value and an lphash_entry_t value.
 
-The number of buckets in a hash table is always a power of two, and
-the tables are aligned to an address boundary that is the largest
-power of two that divides the number of bytes in a bucket.  The hash
-value passed to lphash_lookup or lphash_insert is used to form an
+The number of buckets in a hash table is always a power of two.  The
+hash value passed to lphash_lookup or lphash_insert is used to form an
 initial index of a bucket in the table by simply taking the
 appropriate number of low order bits of the hash value.
+
+The bucket array is aligned to a LPHASH_ALIGN address boundary.  If
+LPHASH_ALIGN is at least the size of a cache line (assumed to be a
+power of two), and the size of a bucket is a power of two no larger
+than a cache line, all buckets will be in a single cache line.
 
 If the initial bucket looked at by lphash_lookup or lphash_insert
 based on the hash value is occupied by an entry that does not have the
 same hash value or does not match the key, indexes of further buckets
 to be probed in succession are found by exclusive or'ing the low-order
 bits of the hash value with the binary representations of the integers
-1, 2, 3, etc.  If the number of bytes in a bucket is a power of two,
-this probing order guarantees that the probes will be confined to a
-single cache line until all buckets in that cache line have been
-probed, regardless of how many bytes are in a cache line (assuming
-that this number is a power of two).
+1, 2, 3, etc.  Given the assumptions above, this probing order
+guarantees that the probes will be confined to a single cache line
+until all buckets in that cache line have been probed.
 
 For experimental purposes, defining the symbol LPHASH_LINEAR (as
 anything) in lphash-app.h will switch lphash to using the strategy of
-probing consecutive buckets (modulo the table size) - ie, probing by
-adding 1, 2, 3, etc. rather than exclusive-or'ing.
+probing successive buckets (modulo the table size) - ie, probing by
+adding 1, 2, 3, etc. (modulo the number of buckets) rather than
+exclusive-or'ing.
 

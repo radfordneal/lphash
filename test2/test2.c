@@ -1,4 +1,4 @@
-/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - PROGRAM FOR TEST #1.
+/* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - PROGRAM FOR TEST #2.
 
    Copyright (c) 2017 Radford M. Neal.
 
@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "lphash-app.h"
 
@@ -28,11 +29,14 @@
 
 int main (int argc, char **argv)
 {
-  int entries, log2_buckets;
+  int entries, log2_buckets, lookups;
 
-  if (argc != 3 || (entries = atoi(argv[1])) < 1 
-       || (log2_buckets = atoi(argv[2])) < 3 || log2_buckets > 30)
-  { fprintf (stderr, "Usage: test2 entries log2-buckets\n");
+  lookups = 0;
+  if (argc != 3 && argc != 4
+       || (entries = atoi(argv[1])) < 1 
+       || (log2_buckets = atoi(argv[2])) < 3 || log2_buckets > 30
+       || argc == 4 && strcmp(argv[3],"0") && (lookups = atoi(argv[3])) < 1 )
+  { fprintf (stderr, "Usage: test2 entries log2-buckets [ lookups ]\n");
     exit(1);
   }
 
@@ -44,9 +48,12 @@ int main (int argc, char **argv)
     exit(1);
   }
 
-  lphash_entry_t e = 123456789;
-  int lines = 0;
-  int i;
+  lphash_entry_t e;
+  int lines, i, j;
+
+  lines = 0;
+
+  e = 123456789;
 
   for (i = 0; i < entries; i++)
   { 
@@ -66,12 +73,39 @@ int main (int argc, char **argv)
 #   endif
   }
 
+  for (j = 0; j < lookups; j++)
+  {
+    e = 123456789;
+
+    for (i = 0; i < entries; i++)
+    { 
+      e = ((int64_t)e * 9876543) % 0x7fffffff;
+  
+      lphash_hash_t h = hash(e);
+      int old_probes = tbl->probes;
+  
+      if (lphash_lookup(tbl,h,e) != e)
+      { fprintf(stderr,"lookup failed (%d %d)\n",i,e);
+        exit(1);
+      }
+  
+      int probes_done = tbl->probes - old_probes;
+  
+#     ifdef LPHASH_LINEAR
+        lines += 1 + (h+probes_done-1) / BUCKETS_PER_LINE - h / BUCKETS_PER_LINE;
+#     else
+        lines += 1 + (probes_done-1) / BUCKETS_PER_LINE;
+#     endif
+    }
+  }
+
   printf ("load %d/%d = %.3f\n",
            tbl->occupied, tbl->size, (double)tbl->occupied / tbl->size);
   printf ("%d probes (%d matches)\n", tbl->probes, tbl->matches);
   printf ("%d cache line accesses\n", lines);
-  printf ("%.3f probes/insertion, %.3f lines/insertion\n",
-           (double)tbl->probes/entries, (double)lines/entries);
+  printf ("%.3f probes/search, %.3f lines/search\n",
+           (double)tbl->probes/(lookups+1)/entries, 
+           (double)lines/(lookups+1)/entries);
 
   lphash_destroy(tbl);
 

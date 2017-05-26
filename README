@@ -9,6 +9,9 @@ language such as R.
 
 See the file lphash-doc for documentation.
 
+A simple set of tests for correctness is in test1, and a performance
+test is in test2.
+
 The source code repository for this software is at
 
    https://gitlab.com/radfordneal/lphash
