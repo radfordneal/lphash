@@ -23,8 +23,9 @@
 #include <stdlib.h>
 
 
-/* INTERNAL STRUCTURE OF A HASH TABLE.  Should not be directly referenced by
-   the application. */
+/* INTERNAL STRUCTURE OF A HASH TABLE.  Should not be directly
+   referenced by the application, except for testing and performance
+   evaluation (using the statistics fields). */
 
 typedef struct 
 { lphash_entry_t entry;      /* Entry in this bucket, or LPHASH_NO_ENTRY */
@@ -32,11 +33,14 @@ typedef struct
 } lphash_bucket_t;
 
 typedef struct
-{ int size;                  /* Number of buckets in table */
+{ 
+  int size;                  /* Number of buckets in table */
   int occupied;              /* Number of occupied buckets */
   int threshold;             /* Threshold for increasing table size */
   int threshold2;            /* Threshold for declaring overflow */
+
   lphash_bucket_t *buckets;  /* Pointer to an array of 'size' buckets */
+  int buckets_offset;        /* Offset added to align buckets */
 
 # ifdef LPHASH_STATS
   int searches;              /* Number of searches done */

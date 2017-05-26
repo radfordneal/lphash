@@ -43,7 +43,7 @@
 
 static int allocate_buckets (lphash_table_t table, int size)
 {
-  void *m;
+  char *m, *m_aligned;
 
   m = lphash_malloc ((size_t)size * sizeof (lphash_bucket_t) + LPHASH_ALIGN-1);
 
@@ -51,9 +51,10 @@ static int allocate_buckets (lphash_table_t table, int size)
   { return 0;
   }
 
-  m = (void *) ((uintptr_t)(m + LPHASH_ALIGN-1) & ~(LPHASH_ALIGN-1));
+  m_aligned = (char *) (((uintptr_t)m + LPHASH_ALIGN-1) & ~(LPHASH_ALIGN-1));
 
-  table->buckets = m;
+  table->buckets = (lphash_bucket_t *) m_aligned;
+  table->buckets_offset = m_aligned - m;
 
   table->size = size;
 
@@ -120,7 +121,7 @@ lphash_table_t lphash_create (int initial_size)
 
 void lphash_destroy (lphash_table_t table)
 {
-  lphash_free (table->buckets);
+  lphash_free ((char *)table->buckets - table->buckets_offset);
   lphash_free (table);
 }
 
@@ -191,8 +192,9 @@ static void expand_table (lphash_table_t table)
   { return;
   }
 
-  int old_size = table->size;
   lphash_bucket_t *old_buckets = table->buckets;
+  int old_size = table->size;
+  int old_offset = table->buckets_offset;
 
   if (!allocate_buckets(table,old_size*2))
   { return;
@@ -228,6 +230,8 @@ static void expand_table (lphash_table_t table)
 
     table->buckets[ix] = old_buckets[j];
   }
+
+  lphash_free ((char *)old_buckets - old_offset);
 }
 
 
