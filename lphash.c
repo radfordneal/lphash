@@ -1,6 +1,6 @@
 /* LPHASH - LOCALLY-PROBED HASH TABLE FACILITY - FUNCTION DEFINITIONS
 
-   Copyright (c) 2017 Radford M. Neal.
+   Copyright (c) 2017, 2018 Radford M. Neal.
 
    The lphash library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
