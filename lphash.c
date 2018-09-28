@@ -54,7 +54,8 @@ static int allocate_buckets (lphash_table_t *table, int size)
   { return 0;
   }
 
-  m_aligned = (char *) (((uintptr_t)m + LPHASH_ALIGN-1) & ~(LPHASH_ALIGN-1));
+  m_aligned = (char *) (((uintptr_t)m + LPHASH_ALIGN-1) 
+                           & ~(uintptr_t)(LPHASH_ALIGN-1));
 
   table->buckets = (lphash_bucket_t *) m_aligned;
   table->buckets_offset = m_aligned - m;
